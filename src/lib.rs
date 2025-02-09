@@ -21,21 +21,46 @@ pub extern "C" fn stride__allocate(size: usize) -> *mut core::ffi::c_void {
     pointer
 }
 
-#[no_mangle]
 /// # Safety
+#[no_mangle]
 pub unsafe extern "C" fn stride__deallocate(pointer: *mut core::ffi::c_void, capacity: usize) {
     unsafe {
         let _ = alloc::vec::Vec::from_raw_parts(pointer, 0, capacity);
     }
 }
 
-#[no_mangle]
 /// # Safety
+#[no_mangle]
 pub unsafe extern "C" fn stride__event_handler(event: *const u8, event_len: usize) -> bool {
     let event_data = unsafe { core::slice::from_raw_parts(event, event_len) };
     let event: Event = serde_json::from_slice(event_data).unwrap();
 
-    println!("event: {event:?}");
-
     EVENT_HANDLER(&event)
+}
+
+pub trait Plugin {
+    fn init() -> Self;
+    fn event(&mut self, event: &Event) -> bool;
+}
+
+#[macro_export]
+macro_rules! plugin {
+    ($plugin:ty) => {
+        #[allow(non_snake_case)]
+        /// # Safety
+        #[no_mangle]
+        pub unsafe extern "C" fn stride__init() {
+            pub static PLUGIN_INSTANCE: std::sync::LazyLock<std::sync::Mutex<$plugin>> =
+                std::sync::LazyLock::new(|| std::sync::Mutex::new(<$plugin>::init()));
+
+            unsafe {
+                $crate::EVENT_HANDLER = |event| {
+                    PLUGIN_INSTANCE
+                        .lock()
+                        .expect("couldn't lock plugin instance")
+                        .event(event)
+                };
+            }
+        }
+    };
 }
