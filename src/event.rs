@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::task::Task;
 
@@ -14,5 +15,13 @@ pub enum Event {
         current: Option<Box<Task>>,
         previous: Option<Box<Task>>,
     },
+    TaskSync,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum EmitEvent {
+    TaskCreate { task: Task },
+    TaskRemove { task: Uuid },
+    TaskModify { task: Task },
     TaskSync,
 }

@@ -3,7 +3,7 @@ pub mod task;
 
 extern crate alloc;
 
-use event::Event;
+use event::{EmitEvent, Event};
 
 fn default_event_handler(_event: &Event) -> bool {
     false
@@ -38,6 +38,10 @@ pub unsafe extern "C" fn stride__event_handler(event: *const u8, event_len: usiz
     EVENT_HANDLER(&event)
 }
 
+extern "C" {
+    pub fn stride__emit(event: *const u8, event_len: usize);
+}
+
 pub trait Plugin {
     fn init() -> Self;
     fn event(&mut self, event: &Event) -> bool;
@@ -63,4 +67,12 @@ macro_rules! plugin {
             }
         }
     };
+}
+
+pub fn emit(event: &EmitEvent) {
+    let event = serde_json::to_string(event).expect("should not fail");
+
+    unsafe {
+        stride__emit(event.as_bytes().as_ptr(), event.len());
+    }
 }
