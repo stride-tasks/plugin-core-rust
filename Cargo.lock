@@ -119,7 +119,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "stride-plugin-core"
+name = "stride-plugin"
 version = "0.1.0"
 dependencies = [
  "chrono",
